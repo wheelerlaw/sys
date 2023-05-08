@@ -8,7 +8,8 @@
 package unix
 
 import (
-	"bytes"
+	"errors"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -43,18 +44,60 @@ func (cmsg *Cmsghdr) SetLen(length int) {
 	cmsg.Len = uint32(length)
 }
 
-func xnuKernelBug25397314(name string) (bool, error) {
-	// Workaround for a kernel bug in macOS Catalina
+var buggyVersion = [...]int{6153, 141, 1}
+
+func xnuKernelBug25397314(syscallName string) (bool, error) {
+	// Workaround for a kernel bug in macOS Catalina when using the kern.procargs2 syscall
 	// More information about this bug can be found here:
 	// https://github.com/apple-oss-distributions/xnu/blob/xnu-7195.50.7.100.1/bsd/kern/kern_sysctl.c#L1552-#L1592
+
+	if !strings.Contains(syscallName, "kern.procargs2") {
+		return false, nil
+	}
+
 	uname := Utsname{}
 	err := Uname(&uname)
 	if err != nil {
 		return false, err
 	}
 
-	xnuKernelBug := string(uname.Release[:bytes.IndexByte(uname.Release[:], 0)]) == "19.6.0"
-	return xnuKernelBug && strings.Contains(name, "kern.procargs2"), nil
+	return buggyKernel(uname)
+}
+
+func buggyKernel(uname Utsname) (bool, error) {
+	versionStr := string(uname.Version[:])
+	xnuVersionStartStr := "xnu-"
+	xnuVersionStartIndex := strings.Index(versionStr, xnuVersionStartStr) + len(xnuVersionStartStr)
+	if xnuVersionStartIndex == (-1 + len(xnuVersionStartStr)) {
+		return false, errors.New("could not find xnu version number in uname")
+	}
+	xnuVersionEndIndex := strings.Index(versionStr[xnuVersionStartIndex:], "~") + xnuVersionStartIndex
+	if xnuVersionEndIndex == -1 {
+		return false, errors.New("could not find xnu version number terminus")
+	}
+	xnuVersionStr := versionStr[xnuVersionStartIndex:xnuVersionEndIndex]
+	xnuVersionStrSplit := strings.Split(xnuVersionStr, ".")
+	xnuVersion := make([]int, len(xnuVersionStrSplit))
+	var err error
+	for i := 0; i < len(xnuVersionStrSplit); i++ {
+		xnuVersion[i], err = strconv.Atoi(xnuVersionStrSplit[i])
+		if err != nil {
+			return false, err
+		}
+	}
+
+	for i := 0; i < len(buggyVersion); i++ {
+		if i >= len(xnuVersion) {
+			return true, nil
+		} else if buggyVersion[i] > xnuVersion[i] {
+			return true, nil
+		} else if buggyVersion[i] < xnuVersion[i] {
+			return false, nil
+		}
+	}
+
+	return len(buggyVersion) == len(xnuVersion), nil
+
 }
 
 func Syscall9(num, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, err syscall.Errno)
