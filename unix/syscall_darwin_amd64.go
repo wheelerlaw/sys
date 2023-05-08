@@ -46,10 +46,10 @@ func (cmsg *Cmsghdr) SetLen(length int) {
 
 var buggyVersion = [...]int{6153, 141, 1}
 
+// Workaround for a kernel bug in macOS Catalina when using the kern.procargs2 syscall
+// More information about this bug can be found here:
+// https://github.com/apple-oss-distributions/xnu/blob/xnu-7195.50.7.100.1/bsd/kern/kern_sysctl.c#L1552-#L1592
 func xnuKernelBug25397314(syscallName string) (bool, error) {
-	// Workaround for a kernel bug in macOS Catalina when using the kern.procargs2 syscall
-	// More information about this bug can be found here:
-	// https://github.com/apple-oss-distributions/xnu/blob/xnu-7195.50.7.100.1/bsd/kern/kern_sysctl.c#L1552-#L1592
 
 	if !strings.Contains(syscallName, "kern.procargs2") {
 		return false, nil
