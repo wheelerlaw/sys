@@ -7,7 +7,11 @@
 
 package unix
 
-import "syscall"
+import (
+	"bytes"
+	"strings"
+	"syscall"
+)
 
 func setTimespec(sec, nsec int64) Timespec {
 	return Timespec{Sec: sec, Nsec: nsec}
@@ -37,6 +41,20 @@ func (msghdr *Msghdr) SetIovlen(length int) {
 
 func (cmsg *Cmsghdr) SetLen(length int) {
 	cmsg.Len = uint32(length)
+}
+
+func xnuKernelBug25397314(name string) (bool, error) {
+	// Workaround for a kernel bug in macOS Catalina
+	// More information about this bug can be found here:
+	// https://github.com/apple-oss-distributions/xnu/blob/xnu-7195.50.7.100.1/bsd/kern/kern_sysctl.c#L1552-#L1592
+	uname := Utsname{}
+	err := Uname(&uname)
+	if err != nil {
+		return false, err
+	}
+
+	xnuKernelBug := string(uname.Release[:bytes.IndexByte(uname.Release[:], 0)]) == "19.6.0"
+	return xnuKernelBug && strings.Contains(name, "kern.procargs2"), nil
 }
 
 func Syscall9(num, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, err syscall.Errno)

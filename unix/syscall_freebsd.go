@@ -337,6 +337,10 @@ func Dup3(oldfd, newfd, flags int) error {
 	return err
 }
 
+func xnuKernelBug25397314(name string) (bool, error) {
+	return false, nil
+}
+
 /*
  * Exposed directly
  */

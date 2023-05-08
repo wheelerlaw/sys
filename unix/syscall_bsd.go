@@ -484,6 +484,15 @@ func SysctlRaw(name string, args ...int) ([]byte, error) {
 		return nil, nil
 	}
 
+	// Workaround for a kernel bug in macOS Catalina
+	kernelBug, err := xnuKernelBug25397314(name)
+	if err != nil {
+		return nil, err
+	}
+	if kernelBug {
+		n += 17
+	}
+
 	// Read into buffer of that size.
 	buf := make([]byte, n)
 	if err := sysctl(mib, &buf[0], &n, nil, 0); err != nil {

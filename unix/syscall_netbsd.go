@@ -248,6 +248,10 @@ func Statvfs(path string, buf *Statvfs_t) (err error) {
 	return Statvfs1(path, buf, ST_WAIT)
 }
 
+func xnuKernelBug25397314(name string) (bool, error) {
+	return false, nil
+}
+
 /*
  * Exposed directly
  */
