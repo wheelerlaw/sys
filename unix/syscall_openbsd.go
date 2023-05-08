@@ -211,6 +211,10 @@ func Uname(uname *Utsname) error {
 	return nil
 }
 
+func xnuKernelBug25397314(name string) (bool, error) {
+	return false, nil
+}
+
 /*
  * Exposed directly
  */

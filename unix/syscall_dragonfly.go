@@ -246,6 +246,10 @@ func Sendfile(outfd int, infd int, offset *int64, count int) (written int, err e
 	return sendfile(outfd, infd, offset, count)
 }
 
+func xnuKernelBug25397314(name string) (bool, error) {
+	return false, nil
+}
+
 /*
  * Exposed directly
  */

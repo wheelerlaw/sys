@@ -39,6 +39,10 @@ func (cmsg *Cmsghdr) SetLen(length int) {
 	cmsg.Len = uint32(length)
 }
 
+func xnuKernelBug25397314(name string) (bool, error) {
+	return false, nil
+}
+
 func Syscall9(num, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, err syscall.Errno) // sic
 
 //sys	Fstat(fd int, stat *Stat_t) (err error)
